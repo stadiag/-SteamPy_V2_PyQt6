@@ -1,5 +1,6 @@
 import sys
 import json
+import html
 import requests
 from io import BytesIO
 from PyQt6.QtWidgets import (
@@ -8,7 +9,7 @@ from PyQt6.QtWidgets import (
     QScrollArea, QGroupBox, QProgressBar, QMenuBar, QMenu, QDialog, QDialogButtonBox
 )
 from PyQt6.QtGui import QFont, QPixmap, QAction
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt
 from PIL import Image
 
 # Fonction pour récupérer le prix d'un jeu + ses DLC via l'API Steam
@@ -117,7 +118,10 @@ class GameCheckBox(QWidget):
         layout.addWidget(self.checkbox)
         
         # Label avec le nom du jeu (cliquable)
-        self.name_label = QLabel(f"<a href='{game_info['store_url']}'>{game_info['title']}</a>")
+        # Escape HTML to prevent XSS
+        safe_title = html.escape(game_info['title'])
+        safe_url = html.escape(game_info['store_url'])
+        self.name_label = QLabel(f"<a href='{safe_url}'>{safe_title}</a>")
         self.name_label.setOpenExternalLinks(True)
         self.name_label.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(self.name_label)
@@ -134,7 +138,7 @@ class GameCheckBox(QWidget):
         self.setLayout(layout)
     
     def load_image_async(self):
-        """Charge l'image de manière asynchrone"""
+        """Charge l'image (note: dans cette version simplifiée, c'est synchrone)"""
         try:
             pixmap = download_image(self.game_info['header_image'])
             if pixmap:
@@ -142,7 +146,8 @@ class GameCheckBox(QWidget):
                 self.image_label.setPixmap(scaled_pixmap)
             else:
                 self.image_label.setText("Image non disponible")
-        except:
+        except Exception as e:
+            print(f"[ERROR] Failed to load image: {e}")
             self.image_label.setText("Erreur")
     
     def is_checked(self):
@@ -466,13 +471,13 @@ class SteamPriceApp(QMainWindow):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, len(appids))
         
+        # Note: Dans une version production, utiliser QThread pour éviter de bloquer l'UI
         for i, appid in enumerate(appids):
             self.progress_bar.setValue(i)
             game_info = get_steam_price_with_dlc(appid)
             if game_info:
                 self.games_data.append(game_info)
                 self.add_game_widget(game_info)
-            QApplication.processEvents()  # Garder l'interface réactive
         
         self.progress_bar.setVisible(False)
         self.result_area.setPlainText(f"✅ {len(self.games_data)} jeu(x) chargé(s)")
@@ -522,7 +527,16 @@ class SteamPriceApp(QMainWindow):
         result_text += f"📊 Jeux sélectionnés : {selected_count}\n"
         result_text += f"💰 Total sans réduction : {total_without_discount:.2f} €\n"
         result_text += f"💸 Total avec réduction : {total_with_discount:.2f} €\n"
-        result_text += f"🎉 Économies : {(total_without_discount - total_with_discount):.2f} € ({((total_without_discount - total_with_discount) / total_without_discount * 100 if total_without_discount > 0 else 0):.1f}%)\n"
+        
+        # Calculate savings with proper zero handling
+        if total_without_discount > 0:
+            savings = total_without_discount - total_with_discount
+            savings_percent = (savings / total_without_discount * 100)
+            result_text += f"🎉 Économies : {savings:.2f} € ({savings_percent:.1f}%)\n"
+        elif total_with_discount == 0:
+            result_text += "ℹ️ Aucune information de prix disponible\n"
+        else:
+            result_text += f"💸 Prix total : {total_with_discount:.2f} €\n"
         
         self.result_area.setPlainText(result_text)
 
