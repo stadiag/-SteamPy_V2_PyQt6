@@ -1,0 +1,25 @@
+{
+  "version": "2.0",
+  "games": [
+    {
+      "title": "World of Goo",
+      "appid": 32510,
+      "final": 9.99,
+      "initial": 14.99,
+      "discount_percent": 33,
+      "dlcs": [],
+      "store_url": "https://store.steampowered.com/app/32510",
+      "header_image": "https://cdn.akamai.steamstatic.com/steam/apps/32510/header.jpg"
+    },
+    {
+      "title": "Limbo",
+      "appid": 48000,
+      "final": 9.99,
+      "initial": 9.99,
+      "discount_percent": 0,
+      "dlcs": [],
+      "store_url": "https://store.steampowered.com/app/48000",
+      "header_image": "https://cdn.akamai.steamstatic.com/steam/apps/48000/header.jpg"
+    }
+  ]
+}

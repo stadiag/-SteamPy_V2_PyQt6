@@ -39,6 +39,7 @@ Thumbs.db
 
 # Application specific
 *.json
+!example_list.json
 !requirements.txt
 saved_lists/
 downloads/
